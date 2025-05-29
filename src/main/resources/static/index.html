@@ -1,10 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capstone 태양광 발전 모니터링</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-$END$
+<div class="container">
+    <h1>🌞 Capstone 태양광 발전 모니터링</h1>
+
+    <section>
+        <h2>📈 시간당 발전량 + 누적 발전량</h2>
+        <div class="date-inputs">
+            <input type="date" id="arimaStart" />
+            <input type="date" id="arimaEnd" />
+            <button onclick="fetchArimaWithActual()">조회</button>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="arimaCombinedChart"></canvas>
+        </div>
+
+        <div class="arima-table-wrapper">
+            <h3>📊 ARIMA 예측 발전량 요약</h3>
+            <table id="arimaTable">
+                <thead>
+                <tr>
+                    <th>예측일</th>
+                    <th>예측 발전량 (MWh)</th>
+                    <th>실측 발전량 (MWh)</th>
+                    <th>RMSE</th>
+                    <th>MAE</th>
+                    <th>MAPE</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <h2>🔮 SARIMA 발전량 예측</h2>
+        <div class="date-inputs">
+            <input type="date" id="sarimaStart" />
+            <input type="date" id="sarimaEnd" />
+            <button onclick="fetchSarimaForecast()">조회</button>
+        </div>
+
+        <div class="sarima-table-wrapper">
+            <table id="sarimaTable">
+                <thead>
+                <tr>
+                    <th>예측 시작</th>
+                    <th>예측 종료</th>
+                    <th>예측 발전량 (MWh)</th>
+                    <th>실측 발전량 (MWh)</th>
+                    <th>RMSE</th>
+                    <th>MAE</th>
+                    <th>MAPE</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script src="/js/main.js"></script>
 </body>
 </html>

@@ -2,8 +2,8 @@ const authHeader = {
     'Authorization': 'Basic ' + btoa('admin:solar2025')
 };
 
-// 공통 차트 관리 객체
 let chartMap = {};
+
 function renderChart(canvasId, labels, datasets) {
     if (chartMap[canvasId]) chartMap[canvasId].destroy();
     const ctx = document.getElementById(canvasId).getContext('2d');
@@ -11,41 +11,39 @@ function renderChart(canvasId, labels, datasets) {
         type: 'line',
         data: {
             labels,
-            datasets: datasets.map(ds => ({
-                label: ds.label,
-                data: ds.data,
-                borderColor: ds.borderColor || getRandomColor(),
-                borderWidth: 2,
-                pointRadius: 2,
-                tension: 0.2,
-                fill: false
-            }))
+            datasets: datasets
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,  // ✅ 기본 비율 유지,
+            maintainAspectRatio: false,
             scales: {
-                x: {
-                    title: { display: true, text: "시간" }
-                },
                 y: {
                     beginAtZero: true,
-                    title: { display: true, text: "발전량 (MWh 또는 MW)" },
-                    suggestedMax: 600 // 화면 이탈 방지용
+                    title: {
+                        display: true,
+                        text: '발전량 (MW 또는 MWh)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: '시간'
+                    },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true
                 }
             }
         }
     });
 }
 
-function getRandomColor() {
-    const r = Math.floor(Math.random() * 200);
-    const g = Math.floor(Math.random() * 200);
-    const b = Math.floor(Math.random() * 200);
-    return `rgb(${r},${g},${b})`;
-}
-
-// 실측 + ARIMA 예측
 async function fetchArimaWithActual() {
     const start = document.getElementById('arimaStart').value;
     const end = document.getElementById('arimaEnd').value;
@@ -71,54 +69,76 @@ async function fetchArimaWithActual() {
         const hourlyPower = uniqueActual.map(d => d.powerMw ?? 0);
         const cumulativeMwh = uniqueActual.map(d => d.cumulativeMwh ?? 0);
 
-        const arimaMap = new Map(arimaData.map(item => [item.forecastDate, item.predictedMwh]));
-        const predictedMwh = labels.map(time => {
-            return arimaMap.has(time) ? arimaMap.get(time) : null;
+        renderChart("arimaCombinedChart", labels, [
+            {
+                label: "시간당 발전량 (MW)",
+                data: hourlyPower,
+                borderColor: "gray",
+                backgroundColor: "gray",
+                fill: false,
+                tension: 0.3
+            },
+            {
+                label: "실측 누적 발전량 (MWh)",
+                data: cumulativeMwh,
+                borderColor: "blue",
+                backgroundColor: "blue",
+                fill: false,
+                tension: 0.3
+            }
+        ]);
+
+        const tbody = document.querySelector("#arimaTable tbody");
+        tbody.innerHTML = "";
+        arimaData.forEach(item => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+        <td>${item.forecastDate}</td>
+        <td>${item.predictedMwh}</td>
+        <td>${item.actualMwh ?? '-'}</td>
+        <td>${item.rmse ?? '-'}</td>
+        <td>${item.mae ?? '-'}</td>
+        <td>${item.mape ?? '-'}</td>
+      `;
+            tbody.appendChild(tr);
         });
 
-        renderChart("arimaCombinedChart", labels, [
-            { label: "시간당 발전량 (MW)", data: hourlyPower, borderColor: "gray" },
-            { label: "실측 누적 발전량 (MWh)", data: cumulativeMwh, borderColor: "blue" },
-            { label: "ARIMA 예측 발전량 (MWh)", data: predictedMwh, borderColor: "orange" }
-        ]);
     } catch (e) {
-        console.error("데이터 불러오기 실패", e);
-        alert("데이터를 불러오는 중 오류가 발생했습니다.");
+        console.error("ARIMA 데이터 오류", e);
+        alert("데이터 불러오기 실패");
     }
 }
 
-// SARIMA
 async function fetchSarimaForecast() {
     const start = document.getElementById('sarimaStart').value;
     const end = document.getElementById('sarimaEnd').value;
 
     if (!start || !end) {
-        alert("조회 기간을 선택하세요.");
+        alert("SARIMA 기간 선택 필요");
         return;
     }
 
     try {
         const response = await fetch(`/api/forecast/sarima?start=${start}&end=${end}`, { headers: authHeader });
         const data = await response.json();
-
         const tbody = document.querySelector("#sarimaTable tbody");
         tbody.innerHTML = "";
 
         data.forEach(row => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td>${row.forecastStart}</td>
-                <td>${row.forecastEnd}</td>
-                <td>${row.predictedMwh}</td>
-                <td>${row.actualMwh ?? '-'}</td>
-                <td>${row.rmse ?? '-'}</td>
-                <td>${row.mae ?? '-'}</td>
-                <td>${row.mape ?? '-'}</td>
-            `;
+        <td>${row.forecastStart}</td>
+        <td>${row.forecastEnd}</td>
+        <td>${row.predictedMwh}</td>
+        <td>${row.actualMwh ?? '-'}</td>
+        <td>${row.rmse ?? '-'}</td>
+        <td>${row.mae ?? '-'}</td>
+        <td>${row.mape ?? '-'}</td>
+      `;
             tbody.appendChild(tr);
         });
     } catch (e) {
-        console.error("SARIMA 데이터 불러오기 실패", e);
-        alert("SARIMA 데이터를 불러오는 중 오류 발생");
+        console.error("SARIMA 오류", e);
+        alert("SARIMA 데이터 불러오기 실패");
     }
 }
