@@ -1,28 +1,39 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko"> <!-- 문서 언어 설정: 한국어 -->
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Capstone 태양광 발전 모니터링</title>
+    <meta charset="UTF-8" /> <!-- 문자 인코딩: UTF-8 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- 모바일 반응형 설정 -->
+    <title>Capstone 태양광 발전 모니터링</title> <!-- 페이지 제목 -->
+
+    <!-- 외부 CSS 스타일 적용 -->
     <link rel="stylesheet" href="/css/style.css" />
+
+    <!-- Chart.js 라이브러리 CDN 추가 (그래프 출력용) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-<div class="container">
+<div class="container"> <!-- 콘텐츠 전체를 감싸는 메인 컨테이너 -->
+
+    <!-- 페이지 헤더 -->
     <h1>🌞 Capstone 태양광 발전 모니터링</h1>
 
+    <!-- ARIMA 관련 섹션 -->
     <section>
         <h2>📈 시간당 발전량 + 누적 발전량</h2>
+
+        <!-- 날짜 선택 입력 및 조회 버튼 -->
         <div class="date-inputs">
             <input type="date" id="arimaStart" />
             <input type="date" id="arimaEnd" />
-            <button onclick="fetchArimaWithActual()">조회</button>
+            <button onclick="fetchArimaWithActual()">조회</button> <!-- JS 함수 호출 -->
         </div>
 
+        <!-- 차트를 표시할 캔버스 영역 -->
         <div class="chart-wrapper">
             <canvas id="arimaCombinedChart"></canvas>
         </div>
 
+        <!-- ARIMA 예측 결과 요약 테이블 -->
         <div class="arima-table-wrapper">
             <h3>📊 ARIMA 예측 발전량 요약</h3>
             <table id="arimaTable">
@@ -36,19 +47,23 @@
                     <th>MAPE</th>
                 </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody></tbody> <!-- JS에서 동적 삽입 -->
             </table>
         </div>
     </section>
 
+    <!-- SARIMA 관련 섹션 -->
     <section>
         <h2>🔮 SARIMA 발전량 예측</h2>
+
+        <!-- SARIMA 날짜 선택 및 조회 버튼 -->
         <div class="date-inputs">
             <input type="date" id="sarimaStart" />
             <input type="date" id="sarimaEnd" />
-            <button onclick="fetchSarimaForecast()">조회</button>
+            <button onclick="fetchSarimaForecast()">조회</button> <!-- JS 함수 호출 -->
         </div>
 
+        <!-- SARIMA 예측 결과 테이블 -->
         <div class="sarima-table-wrapper">
             <table id="sarimaTable">
                 <thead>
@@ -62,12 +77,14 @@
                     <th>MAPE</th>
                 </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody></tbody> <!-- JS에서 동적 삽입 -->
             </table>
         </div>
     </section>
+
 </div>
 
+<!-- JavaScript 파일 로드 (main.js: ARIMA, SARIMA 데이터 로직 포함) -->
 <script src="/js/main.js"></script>
 </body>
 </html>
