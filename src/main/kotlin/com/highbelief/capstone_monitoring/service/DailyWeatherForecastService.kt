@@ -5,13 +5,16 @@ import com.highbelief.capstone_monitoring.repository.DailyWeatherForecastReposit
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 
-@Service
+@Service // Spring이 이 클래스를 서비스 빈으로 등록 (의존성 주입 대상)
 class DailyWeatherForecastService(
-    private val repository: DailyWeatherForecastRepository
+    private val repository: DailyWeatherForecastRepository // 생성자 주입
 ) {
+
+    // 저장된 모든 예보 데이터를 forecastDate 기준 내림차순으로 반환
     fun getAllForecasts(): List<DailyWeatherForecast> =
         repository.findAllByOrderByForecastDateDesc()
 
+    // 특정 날짜의 예보가 존재하는 경우 반환, 없으면 null
     fun getForecastByDate(date: LocalDate): DailyWeatherForecast? =
         repository.findByForecastDate(date)
 }
