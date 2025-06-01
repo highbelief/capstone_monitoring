@@ -1,90 +1,88 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HelioCast Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HelioCast 대시보드</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script defer src="/js/main.js"></script>
   <style>
     .weather-icon {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       vertical-align: middle;
+    }
+    .weather-card {
+      margin-right: 10px;
+      flex: 1;
     }
   </style>
 </head>
 <body data-page="dashboard">
-<div id="topNavbar"></div>
-
-<div class="container">
-  <h2 class="mb-4">📊 실시간 발전량 대시보드</h2>
-
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <div class="card h-100">
-        <div class="card-header">☀️ 오늘의 시간대별 발전량</div>
-        <div class="card-body">
-          <canvas id="generationChart" height="100"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card h-100">
-        <div class="card-header">🔍 단기 발전량 예측</div>
-        <div class="card-body">
-          <table class="table table-bordered">
-            <thead class="table-light">
-            <tr><th>시간</th><th>예측량 (kWh)</th><th>수익 (₩)</th></tr>
-            </thead>
-            <tbody id="shortTermPredictionBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+<div id="topNavbar" class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
+  <a class="navbar-brand" href="#">☀️ HelioCast</a>
+  <div class="ms-auto d-flex align-items-center">
+    <span id="clockDisplay" class="text-white me-3"></span>
+    <button id="toDashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</button>
+    <button id="toLogs" class="btn btn-outline-light btn-sm me-2">Logs</button>
+    <button id="logoutBtn" class="btn btn-warning btn-sm">Logout</button>
   </div>
+</div>
 
-  <div class="card mb-4">
-    <div class="card-header">📈 중기 발전량 예측</div>
-    <div class="card-body">
-      <table class="table table-striped">
-        <thead>
-        <tr><th>날짜</th><th>예측 발전량 (kWh)</th></tr>
+<div class="container mt-4">
+  <div class="row mb-5">
+    <div class="col-md-6">
+      <h2 class="mb-3">⚡ 실시간 발전량</h2>
+      <canvas id="generationChart" height="200"></canvas>
+    </div>
+    <div class="col-md-6">
+      <h2 class="mb-3">📊 단기 발전량 예측</h2>
+      <table class="table table-bordered table-sm">
+        <thead class="table-light">
+        <tr><th>예측일</th><th>예측 발전량 (MWh)</th><th>예상 수익 (KRW)</th></tr>
         </thead>
-        <tbody id="midTermPredictionBody"></tbody>
+        <tbody id="shortTermPredictionBody"></tbody>
       </table>
     </div>
   </div>
 
-  <div class="card mb-4">
-    <div class="card-header">🌦 주간 일기예보</div>
-    <div class="card-body">
-      <div id="weeklyWeatherCards" class="d-flex justify-content-start gap-3 flex-wrap"></div>
-    </div>
+  <div class="mb-5">
+    <h2 class="mb-3">📈 중기 발전량 예측</h2>
+    <table class="table table-bordered table-sm">
+      <thead class="table-light">
+      <tr><th>예측 기간</th><th>예측 발전량 (MWh)</th><th>실제 발전량</th></tr>
+      </thead>
+      <tbody id="midTermPredictionBody"></tbody>
+    </table>
   </div>
 
-  <div class="modal fade" id="weatherDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="weatherModalTitle">📅 일기예보 상세</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p id="weatherSummary" class="text-muted mb-3"></p>
-          <table class="table">
-            <thead>
-            <tr><th>시간</th><th>기온(°C)</th><th>하늘</th><th>강수확률</th></tr>
-            </thead>
-            <tbody id="weatherDetailBody"></tbody>
-          </table>
-        </div>
+  <div>
+    <h2 class="mb-3">🌤️ 7일 일기예보</h2>
+    <div id="weeklyWeatherCards" class="d-flex flex-wrap mb-4"></div>
+  </div>
+</div>
+
+<!-- 날씨 상세 모달 -->
+<div class="modal fade" id="weatherDetailModal" tabindex="-1" aria-labelledby="weatherModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="weatherModalTitle">날씨 상세</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      <div class="modal-body">
+        <p id="weatherSummary" class="mb-3"></p>
+        <table class="table table-sm table-bordered">
+          <thead class="table-light">
+          <tr><th>시간대</th><th>기온 (℃)</th><th>하늘 상태</th><th>강수확률 (%)</th></tr>
+          </thead>
+          <tbody id="weatherDetailBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
-
 </div>
 </body>
 </html>

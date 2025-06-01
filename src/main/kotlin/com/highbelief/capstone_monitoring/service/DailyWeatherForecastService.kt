@@ -17,4 +17,9 @@ class DailyWeatherForecastService(
     // 특정 날짜의 예보가 존재하는 경우 반환, 없으면 null
     fun getForecastByDate(date: LocalDate): DailyWeatherForecast? =
         repository.findByForecastDate(date)
+
+    // 특정 날짜 범위에 해당하는 예보들을 조회 (start 이상, end 이하 범위 포함)
+    fun getForecastsBetween(start: LocalDate, end: LocalDate): List<DailyWeatherForecast> =
+        repository.findByForecastDateBetween(start, end)
+
 }

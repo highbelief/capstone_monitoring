@@ -29,4 +29,13 @@ class DailyWeatherForecastController(
         else
             ResponseEntity.notFound().build() // 없으면 404 Not Found 반환
     }
+
+    @GetMapping("/daily") // HTTP GET 요청 처리: /api/forecast/daily?start=yyyy-MM-dd&end=yyyy-MM-dd
+    fun getForecastsByRange(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) start: LocalDate, // 쿼리 파라미터 start
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) end: LocalDate    // 쿼리 파라미터 end
+    ): ResponseEntity<List<DailyWeatherForecast>> =
+        // 시작일과 종료일 사이의 예보 리스트를 반환
+        ResponseEntity.ok(service.getForecastsBetween(start, end))
+
 }

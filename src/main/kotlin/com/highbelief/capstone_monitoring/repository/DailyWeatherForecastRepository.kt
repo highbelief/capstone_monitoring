@@ -11,4 +11,7 @@ interface DailyWeatherForecastRepository : JpaRepository<DailyWeatherForecast, L
 
     // 모든 예보를 forecastDate 기준 내림차순으로 정렬하여 반환 (가장 최근 예보가 먼저 옴)
     fun findAllByOrderByForecastDateDesc(): List<DailyWeatherForecast>
+
+    // start와 end 날짜 사이에 해당하는 예보 리스트 반환
+    fun findByForecastDateBetween(start: LocalDate, end: LocalDate): List<DailyWeatherForecast>
 }
