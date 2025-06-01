@@ -1,167 +1,222 @@
-// 기본 인증 헤더 설정 (admin / solar2025)
-const authHeader = {
-    'Authorization': 'Basic ' + btoa('admin:solar2025')
-};
+// main.js - HelioCast 대시보드 통합 스크립트 (날짜 및 요약 표시, SVG 경로 매핑 포함 전체 코드)
 
-// 차트 객체들을 저장할 맵 (캔버스 ID별로 관리)
-let chartMap = {};
+window.addEventListener('DOMContentLoaded', () => {
+    const page = document.body.dataset.page;
+    if (page === 'dashboard') {
+        setupRealtimeClock();
+        setupLogoutButton();
+        setupNavigation();
+        fetchWeatherForecast();
+        fetchShortTermForecast();
+        fetchMidTermForecast();
+        drawGenerationChart();
+        enhanceUI();
+    }
+});
 
-// 차트 생성 및 재랜더링 함수
-function renderChart(canvasId, labels, datasets) {
-    // 기존 차트가 있으면 제거
-    if (chartMap[canvasId]) chartMap[canvasId].destroy();
+function setupRealtimeClock() {
+    const clock = document.getElementById('clock');
+    if (!clock) return;
+    setInterval(() => {
+        const now = new Date();
+        clock.textContent = now.toLocaleString('ko-KR');
+    }, 1000);
+}
 
-    // 캔버스 컨텍스트 가져오기
-    const ctx = document.getElementById(canvasId).getContext('2d');
-
-    // 새 차트 생성 및 저장
-    chartMap[canvasId] = new Chart(ctx, {
-        type: 'line',               // 선형 차트
-        data: {
-            labels,                // X축 라벨 (시간)
-            datasets: datasets     // 선별된 데이터셋 (실측, 누적 발전량 등)
-        },
-        options: {
-            responsive: true,      // 반응형 차트
-            maintainAspectRatio: false, // 비율 고정 해제
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: '발전량 (MW 또는 MWh)'
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: '시간'
-                    },
-                    ticks: {
-                        maxRotation: 45,
-                        minRotation: 45
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true // 범례 표시
-                }
-            }
-        }
+function setupLogoutButton() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('auth');
+        window.location.href = '/login.html';
     });
 }
 
-// ARIMA 예측 + 실측 데이터 불러오기 및 시각화
-async function fetchArimaWithActual() {
-    const start = document.getElementById('arimaStart').value;
-    const end = document.getElementById('arimaEnd').value;
+function setupNavigation() {
+    document.getElementById('toDashboard')?.addEventListener('click', () => location.href = 'dashboard.html');
+    document.getElementById('toLogs')?.addEventListener('click', () => location.href = 'log.html');
+}
 
-    if (!start || !end) {
-        alert("조회 기간을 선택하세요.");
-        return;
-    }
-
-    try {
-        // ARIMA 예측 및 실측 데이터를 동시에 가져오기
-        const [arimaRes, actualRes] = await Promise.all([
-            fetch(`/api/forecast/arima?start=${start}&end=${end}`, { headers: authHeader }),
-            fetch(`/api/measurements?start=${start}T00:00:00&end=${end}T23:59:59`, { headers: authHeader })
-        ]);
-
-        // JSON으로 변환
-        const arimaData = await arimaRes.json();
-        const actualData = await actualRes.json();
-
-        // 중복 제거 및 시간순 정렬
-        const uniqueActual = Array.from(new Map(actualData.map(d => [d.measuredAt, d])).values())
-            .sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
-
-        // X축 라벨: 측정 시각
-        const labels = uniqueActual.map(d => d.measuredAt);
-
-        // Y축 데이터셋 1: 시간당 발전량 (MW)
-        const hourlyPower = uniqueActual.map(d => d.powerMw ?? 0);
-
-        // Y축 데이터셋 2: 누적 발전량 (MWh)
-        const cumulativeMwh = uniqueActual.map(d => d.cumulativeMwh ?? 0);
-
-        // 차트 렌더링
-        renderChart("arimaCombinedChart", labels, [
-            {
-                label: "시간당 발전량 (MW)",
-                data: hourlyPower,
-                borderColor: "gray",
-                backgroundColor: "gray",
-                fill: false,
-                tension: 0.3
-            },
-            {
-                label: "실측 누적 발전량 (MWh)",
-                data: cumulativeMwh,
-                borderColor: "blue",
-                backgroundColor: "blue",
-                fill: false,
-                tension: 0.3
-            }
-        ]);
-
-        // 표에 ARIMA 데이터 출력
-        const tbody = document.querySelector("#arimaTable tbody");
-        tbody.innerHTML = "";
-        arimaData.forEach(item => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${item.forecastDate}</td>
-                <td>${item.predictedMwh}</td>
-                <td>${item.actualMwh ?? '-'}</td>
-                <td>${item.rmse ?? '-'}</td>
-                <td>${item.mae ?? '-'}</td>
-                <td>${item.mape ?? '-'}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-    } catch (e) {
-        console.error("ARIMA 데이터 오류", e);
-        alert("데이터 불러오기 실패");
+function enhanceUI() {
+    const navBar = document.getElementById('topNavbar');
+    if (navBar) {
+        navBar.classList.add('navbar', 'navbar-expand-lg', 'navbar-dark', 'bg-primary', 'mb-4', 'px-3');
+        navBar.innerHTML = `
+            <a class="navbar-brand" href="#">☀️ HelioCast</a>
+            <div class="ms-auto d-flex align-items-center">
+                <span id="clock" class="text-white me-3"></span>
+                <button id="toDashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</button>
+                <button id="toLogs" class="btn btn-outline-light btn-sm me-2">Logs</button>
+                <button id="logoutBtn" class="btn btn-warning btn-sm">Logout</button>
+            </div>
+        `;
     }
 }
 
-// SARIMA 예측 데이터 불러오기 및 표로 출력
-async function fetchSarimaForecast() {
-    const start = document.getElementById('sarimaStart').value;
-    const end = document.getElementById('sarimaEnd').value;
+function fetchWeatherForecast() {
+    fetch('/api/forecast')
+        .then(res => res.json())
+        .then(data => {
+            const cardsContainer = document.getElementById('weeklyWeatherCards');
+            if (!cardsContainer) return;
+            cardsContainer.innerHTML = '';
 
-    if (!start || !end) {
-        alert("SARIMA 기간 선택 필요");
-        return;
-    }
-
-    try {
-        // SARIMA 예측 결과 API 호출
-        const response = await fetch(`/api/forecast/sarima?start=${start}&end=${end}`, { headers: authHeader });
-        const data = await response.json();
-
-        // 표에 결과 출력
-        const tbody = document.querySelector("#sarimaTable tbody");
-        tbody.innerHTML = "";
-
-        data.forEach(row => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${row.forecastStart}</td>
-                <td>${row.forecastEnd}</td>
-                <td>${row.predictedMwh}</td>
-                <td>${row.actualMwh ?? '-'}</td>
-                <td>${row.rmse ?? '-'}</td>
-                <td>${row.mae ?? '-'}</td>
-                <td>${row.mape ?? '-'}</td>
-            `;
-            tbody.appendChild(tr);
+            data.slice(0, 7).forEach(item => {
+                const date = new Date(item.forecastDate);
+                const weekday = date.toLocaleDateString('ko-KR', { weekday: 'short' });
+                const card = document.createElement('div');
+                card.className = 'card text-center shadow-sm bg-light border-primary';
+                card.style.width = '120px';
+                card.style.cursor = 'pointer';
+                card.innerHTML = `
+                    <div class="card-body p-2">
+                        <h6 class="card-title">${weekday}</h6>
+                        <p class="mb-0">🌡 ${item.forecastTemperaturePmC.toFixed(1)}°C</p>
+                        <p class="mb-0">☁ ${item.forecastSkyPm}</p>
+                        <p class="mb-0">☔ ${item.forecastPrecipProbPm}%</p>
+                    </div>
+                `;
+                card.addEventListener('click', () => showWeatherDetail(item));
+                cardsContainer.appendChild(card);
+            });
         });
-    } catch (e) {
-        console.error("SARIMA 오류", e);
-        alert("SARIMA 데이터 불러오기 실패");
+}
+
+function fetchShortTermForecast() {
+    fetch('/api/forecast/arima')
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.getElementById('shortTermPredictionBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.hour}시</td>
+                    <td>${row.prediction.toFixed(2)}</td>
+                    <td>${(row.prediction * 130).toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+}
+
+function fetchMidTermForecast() {
+    fetch('/api/forecast/sarima')
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.getElementById('midTermPredictionBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.date}</td>
+                    <td>${row.prediction.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+}
+
+function drawGenerationChart() {
+    fetch('/api/measurement/today')
+        .then(res => res.json())
+        .then(data => {
+            const ctx = document.getElementById('generationChart').getContext('2d');
+            const labels = data.map(d => `${d.hour}시`);
+            const values = data.map(d => d.generation);
+            const cumulated = values.reduce((acc, val, i) => {
+                acc.push((acc[i - 1] || 0) + val);
+                return acc;
+            }, []);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: '시간당 발전량', data: values, borderColor: 'orange', tension: 0.4 },
+                        { label: '누적 발전량', data: cumulated, borderColor: 'green', tension: 0.4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const page = document.body.dataset.page;
+    if (page === 'dashboard') {
+        setupRealtimeClock();
+        setupLogoutButton();
+        setupNavigation();
+        fetchWeatherForecast();
+        fetchShortTermForecast();
+        fetchMidTermForecast();
+        drawGenerationChart();
+        enhanceUI();
     }
+});
+
+function getIconPath(sky) {
+    const nameMap = {
+        '맑음': 'sun.svg',
+        '구름많음': 'sun-cloud.svg',
+        '구름조금': 'cloudy.svg',
+        '흐림': 'cloud.svg',
+        '흐리고 비': 'rain.svg',
+        '비': 'rain.svg',
+        '소나기': 'shower.svg',
+        '비 또는 눈': 'cloud-snow.svg',
+        '눈 또는 비': 'cloud-snow.svg',
+        '눈': 'snow.svg',
+        '구름많고 눈': 'cloud-snow.svg',
+        '구름많고 비': 'cloud-rain.svg',
+        '천둥': 'thunder.svg',
+        '안개': 'fog.svg'
+    };
+    return `/img/weather-icons/${nameMap[sky] || 'sun.svg'}`;
+}
+
+let weatherModal;
+function showWeatherDetail(item) {
+    const tbody = document.getElementById('weatherDetailBody');
+    const summary = document.getElementById('weatherSummary');
+    const title = document.getElementById('weatherModalTitle');
+
+    if (!tbody || !summary || !title) return;
+    tbody.innerHTML = '';
+
+    const date = new Date(item.forecastDate);
+    const weekday = date.toLocaleDateString('ko-KR', { weekday: 'long', month: 'long', day: 'numeric' });
+    title.textContent = `📅 ${weekday} 일기예보 상세`;
+
+    const rows = [
+        ['오전', item.forecastTemperatureAmC, item.forecastSkyAm, item.forecastPrecipProbAm],
+        ['오후', item.forecastTemperaturePmC, item.forecastSkyPm, item.forecastPrecipProbPm]
+    ];
+
+    rows.forEach(([time, temp, sky, rain]) => {
+        const row = document.createElement('tr');
+        const icon = `<img src="${getIconPath(sky)}" class="weather-icon me-2" alt="${sky}">`;
+        row.innerHTML = `
+            <td>${time}</td>
+            <td>${temp.toFixed(1)}</td>
+            <td>${icon}${sky}</td>
+            <td>${rain}%</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    summary.textContent = `${item.forecastSkyAm === item.forecastSkyPm ? item.forecastSkyAm : `오전 ${item.forecastSkyAm} · 오후 ${item.forecastSkyPm}`} / 평균 강수확률 ${(item.forecastPrecipProbAm + item.forecastPrecipProbPm) / 2}%`;
+
+    if (!weatherModal) {
+        weatherModal = new bootstrap.Modal(document.getElementById('weatherDetailModal'));
+    }
+    weatherModal.show();
 }
