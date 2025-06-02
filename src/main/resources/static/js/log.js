@@ -188,6 +188,24 @@ function renderMeasurementLogs(data) {
         tbody.appendChild(tr);
     });
 
+    // 기존 데이터에서 유효한 값만 필터링
+    const filteredData = labels.map((label, index) => {
+        if (actualPower[index] != null && cumulativePower[index] != null) {
+            return {
+                label,
+                actual: actualPower[index],
+                cumulative: cumulativePower[index]
+            };
+        }
+        return null;
+    }).filter(d => d !== null);
+
+// 필터링된 라벨과 데이터 재구성
+    const cleanLabels = filteredData.map(d => d.label);
+    const cleanActualPower = filteredData.map(d => d.actual);
+    const cleanCumulativePower = filteredData.map(d => d.cumulative);
+
+// 차트 렌더링
     const canvas = document.getElementById('generationChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -199,11 +217,11 @@ function renderMeasurementLogs(data) {
     window.generationChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels: cleanLabels,
             datasets: [
                 {
                     label: '실측 발전량 (MWh)',
-                    data: actualPower,
+                    data: cleanActualPower,
                     borderColor: 'blue',
                     backgroundColor: 'rgba(0, 123, 255, 0.1)',
                     tension: 0.3,
@@ -212,7 +230,7 @@ function renderMeasurementLogs(data) {
                 },
                 {
                     label: '누적 발전량 (MWh)',
-                    data: cumulativePower,
+                    data: cleanCumulativePower,
                     borderColor: 'green',
                     backgroundColor: 'rgba(40, 167, 69, 0.1)',
                     tension: 0.3,
@@ -233,6 +251,7 @@ function renderMeasurementLogs(data) {
             }
         }
     });
+
 }
 
 

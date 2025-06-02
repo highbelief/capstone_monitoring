@@ -10,6 +10,8 @@ window.addEventListener('DOMContentLoaded', () => {
         fetchShortTermForecast();
         fetchMidTermForecast();
         drawGenerationChart();
+        updateSidebarInfo();
+        loadNotifications();
     }
 });
 
@@ -88,8 +90,6 @@ function drawGenerationChart() {
         .then(res => res.json())
         .then(data => {
             const now = new Date();
-
-            // ✅ 미래 데이터 제거 + 중복 시간 제거 + 실측값 null 제거
             const seenHours = new Set();
             const filtered = data.filter(d => {
                 const t = new Date(d.measuredAt);
@@ -97,9 +97,7 @@ function drawGenerationChart() {
                 const isFuture = t > now;
                 const isDuplicate = seenHours.has(hour);
                 const hasValidData = d.powerMw != null || d.irradianceWm2 != null;
-
                 if (isFuture || isDuplicate || !hasValidData) return false;
-
                 seenHours.add(hour);
                 return true;
             });
@@ -168,6 +166,49 @@ function drawGenerationChart() {
         .catch(err => console.error('발전량 차트 로딩 실패:', err));
 }
 
+function updateSidebarInfo() {
+    const today = new Date();
+    const start = today.toISOString().split('T')[0] + 'T00:00:00';
+    const end = today.toISOString().split('T')[0] + 'T23:59:59';
+
+    fetch(`/api/measurements?start=${start}&end=${end}`)
+        .then(res => res.json())
+        .then(data => {
+            const now = new Date();
+            const total = data
+                .filter(d => new Date(d.measuredAt) <= now && d.powerMw != null)
+                .reduce((sum, d) => sum + d.powerMw, 0);
+
+            const revenue = total * 93400;
+
+            // 실시간 사용량: 누적 발전량의 40~80% 범위로 현실적 차감
+            const usageRatio = 0.4 + Math.random() * 0.4;
+            const usage = total * usageRatio;
+
+
+            document.getElementById('totalGeneration').textContent = total.toFixed(2) + ' MWh';
+            document.getElementById('estimatedProfit').textContent = revenue.toLocaleString() + ' KRW';
+            document.getElementById('currentUsage').textContent = usage.toFixed(2) + ' MWh';
+            document.getElementById('systemStatus').textContent = '정상 작동 중';
+        });
+}
+
+
+function loadNotifications() {
+    const list = document.getElementById('notificationList');
+    list.innerHTML = '';
+    const notifications = [
+        '📅 6/2 09:00 데이터 수집 완료',
+        '⚠️ 6/1 15:00 예보 미수신',
+        '✅ 예측 모델 최적화 적용'
+    ];
+    notifications.forEach(msg => {
+        const li = document.createElement('li');
+        li.textContent = msg;
+        list.appendChild(li);
+    });
+}
+
 function getIconPath(sky) {
     const nameMap = {
         '맑음': 'sun.svg',
@@ -191,24 +232,17 @@ function fetchWeatherForecast() {
         .then(data => {
             const cardsContainer = document.getElementById('weeklyWeatherCards');
             cardsContainer.innerHTML = '';
-
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // 시각 초기화로 날짜만 비교
-
-            // 오늘 이후 데이터만 필터링 후 정렬
-            const filteredData = data
-                .filter(item => {
-                    const forecastDate = new Date(item.forecastDate);
-                    forecastDate.setHours(0, 0, 0, 0);
-                    return forecastDate >= today;
-                })
-                .sort((a, b) => new Date(a.forecastDate) - new Date(b.forecastDate))
-                .slice(0, 7); // 최대 7개
+            today.setHours(0, 0, 0, 0);
+            const filteredData = data.filter(item => {
+                const forecastDate = new Date(item.forecastDate);
+                forecastDate.setHours(0, 0, 0, 0);
+                return forecastDate >= today;
+            }).sort((a, b) => new Date(a.forecastDate) - new Date(b.forecastDate)).slice(0, 7);
 
             filteredData.forEach(item => {
                 const date = new Date(item.forecastDate);
                 const weekday = date.toLocaleDateString('ko-KR', { weekday: 'short' });
-
                 const card = document.createElement('div');
                 card.className = 'card weather-card shadow-sm border-primary';
                 card.innerHTML = `
@@ -225,7 +259,6 @@ function fetchWeatherForecast() {
             });
         });
 }
-
 
 function showWeatherDetail(item) {
     const tbody = document.getElementById('weatherDetailBody');
