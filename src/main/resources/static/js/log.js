@@ -92,9 +92,13 @@ function renderMeasurementLogs(data) {
         tr.innerHTML = `
             <td>${row.measuredAt}</td>
             <td>${row.powerMw}</td>
+            <td>${row.cumulative_mwh}</td>
             <td>${row.irradianceWm2}</td>
             <td>${row.temperatureC}</td>
             <td>${row.windSpeedMs}</td>
+            <td>${row.forecastIrradianceWm2}</td>
+            <td>${row.forecastTemperatureC}</td>
+            <td>${row.forecastWindSpeedMs}</td>
         `;
         tbody.appendChild(tr);
     });
