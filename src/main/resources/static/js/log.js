@@ -69,7 +69,20 @@ function fetchLogData(type, start, end) {
 function renderWeatherLogs(data) {
     const tbody = document.getElementById('weatherLogBody');
     tbody.innerHTML = '';
+
+    const labels = [];
+    const tempAm = [];
+    const tempPm = [];
+    const rainAm = [];
+    const rainPm = [];
+
     data.forEach(row => {
+        labels.push(row.forecastDate);
+        tempAm.push(row.forecastTemperatureAmC ?? null);
+        tempPm.push(row.forecastTemperaturePmC ?? null);
+        rainAm.push(row.forecastPrecipProbAm ?? null);
+        rainPm.push(row.forecastPrecipProbPm ?? null);
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.forecastDate}</td>
@@ -82,12 +95,84 @@ function renderWeatherLogs(data) {
         `;
         tbody.appendChild(tr);
     });
+
+    const canvas = document.getElementById('weatherChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (window.weatherChart instanceof Chart) {
+        window.weatherChart.destroy();
+    }
+
+    window.weatherChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '오전 기온 (℃)',
+                    data: tempAm,
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                },
+                {
+                    label: '오후 기온 (℃)',
+                    data: tempPm,
+                    backgroundColor: 'rgba(255, 159, 64, 0.6)'
+                },
+                {
+                    label: '오전 강수확률 (%)',
+                    data: rainAm,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    yAxisID: 'y1'
+                },
+                {
+                    label: '오후 강수확률 (%)',
+                    data: rainPm,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: '예보 날짜' }
+                },
+                y: {
+                    title: { display: true, text: '기온 (℃)' },
+                    beginAtZero: true
+                },
+                y1: {
+                    title: { display: true, text: '강수확률 (%)' },
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
 }
+
 
 function renderMeasurementLogs(data) {
     const tbody = document.getElementById('measurementLogBody');
     tbody.innerHTML = '';
+
+    const labels = [];
+    const actualPower = [];
+    const cumulativePower = [];
+
     data.forEach(row => {
+        const timeLabel = new Date(row.measuredAt).toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        labels.push(timeLabel);
+        actualPower.push(row.powerMw);
+        cumulativePower.push(row.cumulativeMwh);
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.measuredAt}</td>
@@ -102,12 +187,71 @@ function renderMeasurementLogs(data) {
         `;
         tbody.appendChild(tr);
     });
+
+    const canvas = document.getElementById('generationChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (window.generationChart instanceof Chart) {
+        window.generationChart.destroy();
+    }
+
+    window.generationChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '실측 발전량 (MWh)',
+                    data: actualPower,
+                    borderColor: 'blue',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 2
+                },
+                {
+                    label: '누적 발전량 (MWh)',
+                    data: cumulativePower,
+                    borderColor: 'green',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.3,
+                    fill: false,
+                    pointRadius: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { title: { display: true, text: '시간' } },
+                y: { title: { display: true, text: '발전량 (MWh)' }, beginAtZero: true }
+            }
+        }
+    });
 }
+
+
+
 
 function renderArimaLogs(data) {
     const tbody = document.getElementById('arimaLogBody');
     tbody.innerHTML = '';
-    data.forEach(row => {
+
+    const labels = [];
+    const predicted = [];
+    const actual = [];
+
+    data.forEach((row, i) => {
+        const label = `${row.forecastDate} (${i + 1})`;  // 예: 2025-06-02 (1)
+        labels.push(label);
+        predicted.push(row.predictedMwh.toFixed(2));
+        actual.push(row.actualMwh != null ? row.actualMwh.toFixed(2) : null);
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.forecastDate}</td>
@@ -119,12 +263,67 @@ function renderArimaLogs(data) {
         `;
         tbody.appendChild(tr);
     });
+
+    const canvas = document.getElementById('arimaChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (window.arimaChart instanceof Chart) {
+        window.arimaChart.destroy();
+    }
+
+    window.arimaChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '예측 발전량 (MWh)',
+                    data: predicted,
+                    backgroundColor: 'rgba(0, 123, 255, 0.6)'
+                },
+                {
+                    label: '실제 발전량 (MWh)',
+                    data: actual,
+                    backgroundColor: 'rgba(40, 167, 69, 0.6)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: '예측일 (샘플순번)' },
+                    stacked: false
+                },
+                y: {
+                    title: { display: true, text: '발전량 (MWh)' },
+                    beginAtZero: true,
+                    stacked: false
+                }
+            }
+        }
+    });
 }
 
 function renderSarimaLogs(data) {
     const tbody = document.getElementById('sarimaLogBody');
     tbody.innerHTML = '';
-    data.forEach(row => {
+
+    const labels = [];
+    const predicted = [];
+    const actual = [];
+
+    data.forEach((row, i) => {
+        const label = `${row.forecastStart} ~ ${row.forecastEnd} (${i + 1})`;
+        labels.push(label);
+        predicted.push(row.predictedMwh.toFixed(2));
+        actual.push(row.actualMwh != null ? row.actualMwh.toFixed(2) : null);
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.forecastStart} ~ ${row.forecastEnd}</td>
@@ -135,5 +334,50 @@ function renderSarimaLogs(data) {
             <td>${row.mape ?? '-'}</td>
         `;
         tbody.appendChild(tr);
+    });
+
+    const canvas = document.getElementById('sarimaChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (window.sarimaChart instanceof Chart) {
+        window.sarimaChart.destroy();
+    }
+
+    window.sarimaChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '예측 발전량 (MWh)',
+                    data: predicted,
+                    backgroundColor: 'rgba(255, 193, 7, 0.7)'
+                },
+                {
+                    label: '실제 발전량 (MWh)',
+                    data: actual,
+                    backgroundColor: 'rgba(108, 117, 125, 0.7)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: '예측 기간' },
+                    stacked: false
+                },
+                y: {
+                    title: { display: true, text: '발전량 (MWh)' },
+                    beginAtZero: true,
+                    stacked: false
+                }
+            }
+        }
     });
 }

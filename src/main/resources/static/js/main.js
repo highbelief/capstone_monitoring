@@ -87,9 +87,27 @@ function drawGenerationChart() {
     fetch(`/api/measurements?start=${start}&end=${end}`)
         .then(res => res.json())
         .then(data => {
+            const now = new Date();
+
+            // ✅ 미래 데이터 제거 + 중복 시간 제거 + 실측값 null 제거
+            const seenHours = new Set();
+            const filtered = data.filter(d => {
+                const t = new Date(d.measuredAt);
+                const hour = t.getHours();
+                const isFuture = t > now;
+                const isDuplicate = seenHours.has(hour);
+                const hasValidData = d.powerMw != null || d.irradianceWm2 != null;
+
+                if (isFuture || isDuplicate || !hasValidData) return false;
+
+                seenHours.add(hour);
+                return true;
+            });
+
             const ctx = document.getElementById('generationChart').getContext('2d');
-            const labels = data.map(d => new Date(d.measuredAt).getHours() + '시');
-            const values = data.map(d => d.powerMw);
+            const labels = filtered.map(d => new Date(d.measuredAt).getHours() + '시');
+            const values = filtered.map(d => d.powerMw ?? 0);
+            const irradiance = filtered.map(d => d.irradianceWm2 ?? null);
             const cumulated = values.reduce((acc, val, i) => {
                 acc.push((acc[i - 1] || 0) + val);
                 return acc;
@@ -100,14 +118,50 @@ function drawGenerationChart() {
                 data: {
                     labels,
                     datasets: [
-                        { label: '시간당 발전량', data: values, borderColor: 'orange', tension: 0.3 },
-                        { label: '누적 발전량', data: cumulated, borderColor: 'green', tension: 0.3 }
+                        {
+                            label: '시간당 발전량 (MWh)',
+                            data: values,
+                            borderColor: 'orange',
+                            backgroundColor: 'rgba(255,165,0,0.1)',
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '누적 발전량 (MWh)',
+                            data: cumulated,
+                            borderColor: 'green',
+                            backgroundColor: 'rgba(0,128,0,0.1)',
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '일사량 (W/m²)',
+                            data: irradiance,
+                            borderColor: 'blue',
+                            backgroundColor: 'rgba(0,123,255,0.1)',
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
                     ]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { position: 'top' } },
-                    scales: { y: { beginAtZero: true } }
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '발전량 (MWh)' }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            title: { display: true, text: '일사량 (W/m²)' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
                 }
             });
         })

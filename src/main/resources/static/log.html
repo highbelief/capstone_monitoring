@@ -4,9 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HelioCast 로그 기록</title>
+
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- ✅ Chart.js (반드시 log.js보다 먼저 로딩) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Bootstrap JS -->
     <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- HelioCast JS -->
     <script defer src="/js/log.js"></script>
+
     <style>
         .weather-icon {
             width: 30px;
@@ -36,6 +46,7 @@
     </ul>
 
     <div class="tab-content">
+        <!-- 일기예보 탭 -->
         <div class="tab-pane fade show active" id="weatherLog">
             <h5>📅 일기예보 기록</h5>
             <form class="log-range-form mb-3" data-type="weather">
@@ -43,6 +54,7 @@
                 <input type="date" class="end-date" required>
                 <button type="submit" class="btn btn-sm btn-primary ms-2">조회</button>
             </form>
+            <canvas id="weatherChart" height="120" class="mb-4"></canvas>
             <div class="table-responsive">
                 <table class="table table-sm table-bordered">
                     <thead class="table-light">
@@ -53,6 +65,7 @@
             </div>
         </div>
 
+        <!-- 실측 발전량 탭 -->
         <div class="tab-pane fade" id="generationLog">
             <h5>⚡ 실측 발전량 기록</h5>
             <form class="log-range-form mb-3" data-type="measurement">
@@ -60,6 +73,8 @@
                 <input type="date" class="end-date" required>
                 <button type="submit" class="btn btn-sm btn-primary ms-2">조회</button>
             </form>
+            <!-- ✅ 차트 영역 추가 -->
+            <canvas id="generationChart" height="120" class="mb-4"></canvas>
             <div class="table-responsive">
                 <table class="table table-sm table-bordered">
                     <thead class="table-light">
@@ -70,6 +85,7 @@
             </div>
         </div>
 
+        <!-- 단기 예측 탭 -->
         <div class="tab-pane fade" id="shortForecastLog">
             <h5>🔍 단기 예측 기록</h5>
             <form class="log-range-form mb-3" data-type="arima">
@@ -77,6 +93,7 @@
                 <input type="date" class="end-date" required>
                 <button type="submit" class="btn btn-sm btn-primary ms-2">조회</button>
             </form>
+            <canvas id="arimaChart" height="120" class="mb-4"></canvas>
             <div class="table-responsive">
                 <table class="table table-sm table-bordered">
                     <thead class="table-light">
@@ -87,6 +104,7 @@
             </div>
         </div>
 
+        <!-- 중기 예측 탭 -->
         <div class="tab-pane fade" id="midForecastLog">
             <h5>📈 중기 예측 기록</h5>
             <form class="log-range-form mb-3" data-type="sarima">
@@ -94,6 +112,7 @@
                 <input type="date" class="end-date" required>
                 <button type="submit" class="btn btn-sm btn-primary ms-2">조회</button>
             </form>
+            <canvas id="sarimaChart" height="120" class="mb-4"></canvas>
             <div class="table-responsive">
                 <table class="table table-sm table-bordered">
                     <thead class="table-light">
@@ -107,3 +126,4 @@
 </div>
 </body>
 </html>
+
