@@ -5,12 +5,20 @@ window.addEventListener('DOMContentLoaded', () => {
     setupNavigation();           // ✅ 이 줄을 추가
     loadTodayWeatherIcon();
     updateSidebarInfo();
+    setupLogoutButton();
 });
 
 function setupNavigation() {
     document.getElementById('toDashboard')?.addEventListener('click', () => location.href = 'dashboard.html');
     document.getElementById('toPCS')?.addEventListener('click', () => location.href = 'pcs.html'); // ✅ PCS 버튼 처리 추가
     document.getElementById('toLogs')?.addEventListener('click', () => location.href = 'log.html');
+}
+
+function setupLogoutButton() {
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        localStorage.removeItem('auth');
+        window.location.href = '/login.html';
+    });
 }
 
 // 시계 표시

@@ -16,7 +16,9 @@ function renderPCSModules() {
         const statusOptions = ['대기', '충전 중', '방전 중', '정비 중'];
         const status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
         const power = +(Math.random() * 0.075).toFixed(3);
-        const module = { id: i, status, power };
+        const soc = Math.floor(Math.random() * 101); // 충전률 0~100%
+
+        const module = { id: i, status, power, soc };
         pcsModules.push(module);
 
         const card = createModuleCard(module);
@@ -27,7 +29,6 @@ function renderPCSModules() {
 function createModuleCard(module) {
     const card = document.createElement('div');
     card.className = 'col-md-4';
-
     const isLocked = module.status === '정비 중';
 
     card.innerHTML = `
@@ -39,13 +40,18 @@ function createModuleCard(module) {
       <h5>모듈 #${module.id}</h5>
       <p><strong>출력:</strong> ${module.power} MWh</p>
       <p><strong>상태:</strong> <span class="module-status">${module.status}</span></p>
+      <p><strong>충전률:</strong> <span class="soc-value">${module.soc}%</span></p>
+      <div class="progress mb-2">
+        <div class="progress-bar bg-success soc-bar" role="progressbar" style="width: ${module.soc}%;" aria-valuenow="${module.soc}" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
       <button class="btn btn-sm btn-outline-primary charge-btn" ${isLocked ? 'disabled' : ''}>충전 시작</button>
       <button class="btn btn-sm btn-outline-danger ms-2 discharge-btn" ${isLocked ? 'disabled' : ''}>방전 시작</button>
     </div>
   `;
 
-    const cardBody = card.querySelector('.pcs-card');
     const statusSpan = card.querySelector('.module-status');
+    const socText = card.querySelector('.soc-value');
+    const socBar = card.querySelector('.soc-bar');
     const chargeBtn = card.querySelector('.charge-btn');
     const dischargeBtn = card.querySelector('.discharge-btn');
     const codeInput = card.querySelector('.code-input');
@@ -53,11 +59,19 @@ function createModuleCard(module) {
     chargeBtn?.addEventListener('click', () => {
         module.status = '충전 중';
         statusSpan.textContent = '충전 중';
+        module.soc = Math.min(module.soc + 10, 100);
+        socText.textContent = module.soc + '%';
+        socBar.style.width = module.soc + '%';
+        socBar.setAttribute('aria-valuenow', module.soc);
     });
 
     dischargeBtn?.addEventListener('click', () => {
         module.status = '방전 중';
         statusSpan.textContent = '방전 중';
+        module.soc = Math.max(module.soc - 10, 0);
+        socText.textContent = module.soc + '%';
+        socBar.style.width = module.soc + '%';
+        socBar.setAttribute('aria-valuenow', module.soc);
     });
 
     if (codeInput) {
