@@ -26,15 +26,21 @@
     </style>
 </head>
 <body data-page="log">
-<div id="topNavbar" class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
-    <a class="navbar-brand" href="#">☀️ HelioCast</a>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
+    <a class="navbar-brand d-flex align-items-center" href="/index.html">
+        <img src="/img/logo.svg" alt="HelioCast 로고" style="height: 30px; margin-right: 8px;">
+        HelioCast
+    </a>
     <div class="ms-auto d-flex align-items-center">
         <span id="clockDisplay" class="text-white me-3"></span>
+        <button class="btn btn-outline-light btn-sm me-2" onclick="location.href='/index.html'">Home</button>
         <button id="toDashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</button>
-        <button id="toLogs" class="btn btn-outline-light btn-sm">Logs</button>
-        <button id="logoutBtn" class="btn btn-warning btn-sm ms-2">Logout</button>
+        <button id="toPCS" class="btn btn-outline-light btn-sm me-2">PCS</button> <!-- ✅ 추가된 PCS 버튼 -->
+        <button id="toLogs" class="btn btn-outline-light btn-sm me-2">Logs</button>
+        <button id="logoutBtn" class="btn btn-warning btn-sm">Logout</button>
     </div>
-</div>
+</nav>
+
 
 <div class="container mt-4">
     <h2 class="mb-4">📚 기록 보기</h2>

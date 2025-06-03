@@ -33,6 +33,7 @@ function setupLogoutButton() {
 
 function setupNavigation() {
     document.getElementById('toDashboard')?.addEventListener('click', () => location.href = 'dashboard.html');
+    document.getElementById('toPCS')?.addEventListener('click', () => location.href = 'pcs.html'); // ✅ PCS 버튼 처리 추가
     document.getElementById('toLogs')?.addEventListener('click', () => location.href = 'log.html');
 }
 

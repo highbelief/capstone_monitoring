@@ -1,5 +1,18 @@
 // index.js – 홈 화면 전용 스크립트
 
+window.addEventListener('DOMContentLoaded', () => {
+    setupRealtimeClock();
+    setupNavigation();           // ✅ 이 줄을 추가
+    loadTodayWeatherIcon();
+    updateSidebarInfo();
+});
+
+function setupNavigation() {
+    document.getElementById('toDashboard')?.addEventListener('click', () => location.href = 'dashboard.html');
+    document.getElementById('toPCS')?.addEventListener('click', () => location.href = 'pcs.html'); // ✅ PCS 버튼 처리 추가
+    document.getElementById('toLogs')?.addEventListener('click', () => location.href = 'log.html');
+}
+
 // 시계 표시
 function setupRealtimeClock() {
     const clock = document.getElementById('clockDisplay');
