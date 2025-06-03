@@ -24,9 +24,9 @@ class SecurityConfig {
                     .anyRequest().authenticated()
             }
             .formLogin {
-                it.loginPage("/login.html")        // 로그인 페이지 경로
-                    .loginProcessingUrl("/login")     // 로그인 처리 요청 (폼 action)
-                    .defaultSuccessUrl("/dashboard.html", true)  // 성공 시 이동
+                it.loginPage("/login.html")
+                    .loginProcessingUrl("/login")
+                    .defaultSuccessUrl("/index.html", true)  // <-- 여기만 수정
                     .permitAll()
             }
             .logout {
