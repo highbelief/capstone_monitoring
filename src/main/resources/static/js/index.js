@@ -2,15 +2,16 @@
 
 window.addEventListener('DOMContentLoaded', () => {
     setupRealtimeClock();
-    setupNavigation();           // ✅ 이 줄을 추가
+    setupNavigation();               // ✅ 이 줄을 추가
     loadTodayWeatherIcon();
     updateSidebarInfo();
+    updateForecastGeneration();      // ✅ 예측 발전량 추가
     setupLogoutButton();
 });
 
 function setupNavigation() {
     document.getElementById('toDashboard')?.addEventListener('click', () => location.href = 'dashboard.html');
-    document.getElementById('toPCS')?.addEventListener('click', () => location.href = 'pcs.html'); // ✅ PCS 버튼 처리 추가
+    document.getElementById('toPCS')?.addEventListener('click', () => location.href = 'pcs.html');
     document.getElementById('toLogs')?.addEventListener('click', () => location.href = 'log.html');
 }
 
@@ -91,9 +92,25 @@ function updateSidebarInfo() {
         });
 }
 
-// 초기화
-window.addEventListener('DOMContentLoaded', () => {
-    setupRealtimeClock();
-    loadTodayWeatherIcon();
-    updateSidebarInfo();
-});
+// ✅ 예측 발전량 로딩 함수
+function updateForecastGeneration() {
+    const today = new Date().toISOString().split('T')[0];
+
+    fetch(`/api/forecast/arima?start=${today}&end=${today}`)
+        .then(res => res.json())
+        .then(data => {
+            const forecastElement = document.getElementById('forecastGeneration');
+            const forecast = data.find(entry => entry.forecastDate === today);
+            if (forecast && forecast.predictedMwh !== undefined) {
+                forecastElement.textContent = `${forecast.predictedMwh.toFixed(2)} MWh`;
+            } else {
+                forecastElement.textContent = "데이터 없음";
+            }
+        })
+        .catch(err => {
+            console.error('예측 발전량 로딩 실패:', err);
+            const el = document.getElementById('forecastGeneration');
+            if (el) el.textContent = "데이터 오류";
+        });
+}
+
