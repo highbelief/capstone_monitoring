@@ -44,12 +44,11 @@ function fetchShortTermForecast() {
         .then(data => {
             const tbody = document.getElementById('shortTermPredictionBody');
             tbody.innerHTML = '';
-            data.forEach((row, index) => {
-                const hour = (index + 6) % 24;
+            data.forEach(row => {
                 const revenue = row.predictedMwh * 1000 * 93.4;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${hour}시</td>
+                    <td>${row.forecastDate}</td>
                     <td>${row.predictedMwh.toFixed(3)}</td>
                     <td>${Math.round(revenue).toLocaleString()}</td>
                 `;
@@ -58,6 +57,7 @@ function fetchShortTermForecast() {
         })
         .catch(err => console.error('단기 예측 로딩 실패:', err));
 }
+
 
 function fetchMidTermForecast() {
     const today = new Date();

@@ -255,10 +255,23 @@ function renderMeasurementLogs(data) {
 
 }
 
+async function fetchActualCumulativeMwh(dateStr) {
+    const start = `${dateStr}T00:00:00`;
+    const end = `${dateStr}T23:59:59`;
+    const res = await fetch(`/api/measurements?start=${start}&end=${end}`);
+    const data = await res.json();
 
+    // 측정된 시간 중 가장 마지막 값 추출
+    const valid = data.filter(row => row.cumulativeMwh != null);
+    if (valid.length === 0) return 0;
 
+    const latest = valid.reduce((a, b) =>
+        new Date(a.measuredAt) > new Date(b.measuredAt) ? a : b
+    );
+    return latest.cumulativeMwh;
+}
 
-function renderArimaLogs(data) {
+async function renderArimaLogs(data) {
     const tbody = document.getElementById('arimaLogBody');
     tbody.innerHTML = '';
 
@@ -266,23 +279,26 @@ function renderArimaLogs(data) {
     const predicted = [];
     const actual = [];
 
-    data.forEach((row, i) => {
-        const label = `${row.forecastDate} (${i + 1})`;  // 예: 2025-06-02 (1)
+    for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        const label = `${row.forecastDate} (${i + 1})`;
         labels.push(label);
         predicted.push(row.predictedMwh.toFixed(2));
-        actual.push(row.actualMwh != null ? row.actualMwh.toFixed(2) : null);
+
+        const actualMwh = await fetchActualCumulativeMwh(row.forecastDate);
+        actual.push(actualMwh.toFixed(2));
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.forecastDate}</td>
             <td>${row.predictedMwh.toFixed(2)}</td>
-            <td>${row.actualMwh != null ? row.actualMwh.toFixed(2) : '-'}</td>
+            <td>${actualMwh.toFixed(2)}</td>
             <td>${row.rmse ?? '-'}</td>
             <td>${row.mae ?? '-'}</td>
             <td>${row.mape ?? '-'}</td>
         `;
         tbody.appendChild(tr);
-    });
+    }
 
     const canvas = document.getElementById('arimaChart');
     if (!canvas) return;
@@ -330,7 +346,8 @@ function renderArimaLogs(data) {
     });
 }
 
-function renderSarimaLogs(data) {
+
+async function renderSarimaLogs(data) {
     const tbody = document.getElementById('sarimaLogBody');
     tbody.innerHTML = '';
 
@@ -338,23 +355,27 @@ function renderSarimaLogs(data) {
     const predicted = [];
     const actual = [];
 
-    data.forEach((row, i) => {
+    for (let i = 0; i < data.length; i++) {
+        const row = data[i];
         const label = `${row.forecastStart} ~ ${row.forecastEnd} (${i + 1})`;
         labels.push(label);
         predicted.push(row.predictedMwh.toFixed(2));
-        actual.push(row.actualMwh != null ? row.actualMwh.toFixed(2) : null);
+
+        const forecastDate = row.forecastEnd.split('T')[0];  // 또는 forecastStart
+        const actualMwh = await fetchActualCumulativeMwh(forecastDate);
+        actual.push(actualMwh.toFixed(2));
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.forecastStart} ~ ${row.forecastEnd}</td>
             <td>${row.predictedMwh.toFixed(2)}</td>
-            <td>${row.actualMwh != null ? row.actualMwh.toFixed(2) : '-'}</td>
+            <td>${actualMwh.toFixed(2)}</td>
             <td>${row.rmse ?? '-'}</td>
             <td>${row.mae ?? '-'}</td>
             <td>${row.mape ?? '-'}</td>
         `;
         tbody.appendChild(tr);
-    });
+    }
 
     const canvas = document.getElementById('sarimaChart');
     if (!canvas) return;
@@ -401,3 +422,4 @@ function renderSarimaLogs(data) {
         }
     });
 }
+
